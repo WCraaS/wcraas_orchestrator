@@ -1,0 +1,74 @@
+version: '3'
+services:
+  mongo:
+    image: mongo
+    restart: unless-stopped
+    container_name: wcraas_mongo
+    hostname: wcraas_mongo
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    container_name: wcraas_redis
+    hostname: wcraas_redis
+
+  cottontail:
+    image: rabbitmq:3.7.18-management-alpine
+    restart: unless-stopped
+    container_name: wcraas_cottontail
+    ports:
+      - "${ENV_COTTONTAIL_MGMT_IFACE}15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${ENV_COTTONTAIL_USER}
+      RABBITMQ_DEFAULT_PASS: ${ENV_COTTONTAIL_PASS}
+    hostname: wcraas_cottontail
+
+  discovery:
+    build:
+      context: .
+      dockerfile: ./discovery.Dockerfile
+    restart: unless-stopped
+    # Intentionally ommited `container_name` since discovery
+    # is the one service that would make sense to scale up
+    environment:
+      COTTONTAIL_HOST: wcraas_cottontail
+      COTTONTAIL_PORT: 5672
+      COTTONTAIL_USER: ${ENV_COTTONTAIL_USER}
+      COTTONTAIL_PASS: ${ENV_COTTONTAIL_PASS}
+    depends_on:
+      - cottontail
+
+  storage:
+    build:
+      context: .
+      dockerfile: ./storage.Dockerfile
+    restart: unless-stopped
+    container_name: wcraas_storage
+    environment:
+      COTTONTAIL_HOST: wcraas_cottontail
+      COTTONTAIL_PORT: 5672
+      COTTONTAIL_USER: ${ENV_COTTONTAIL_USER}
+      COTTONTAIL_PASS: ${ENV_COTTONTAIL_PASS}
+      MONGO_HOST: wcraas_mongo
+      MONGO_PORT: 27017
+      QUEUE_COLLECTION_MAP: ${ENV_QUEUE_COLLECTION_MAP}
+    depends_on:
+      - cottontail
+      - mongo
+
+  control:
+    build:
+      context: .
+      dockerfile: ./control.Dockerfile
+    restart: unless-stopped
+    container_name: wcraas_control
+    environment:
+      COTTONTAIL_HOST: wcraas_cottontail
+      COTTONTAIL_PORT: 5672
+      COTTONTAIL_USER: ${ENV_COTTONTAIL_USER}
+      COTTONTAIL_PASS: ${ENV_COTTONTAIL_PASS}
+      REDIS_HOST: wcraas_redis
+      REDIS_PORT: 6379
+    depends_on:
+      - cottontail
+      - redis
