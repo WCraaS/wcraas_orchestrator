@@ -31,7 +31,7 @@ Create a `.env` file (all `/*.env` files are ignored in this repository) and dec
 echo 'ENV_COTTONTAIL_MGMT_IFACE=127.0.0.1:' >> .env
 echo 'ENV_COTTONTAIL_USER=guest' >> .env
 echo 'ENV_COTTONTAIL_PASS=guest' >> .env
-echo 'ENV_QUEUE_COLLECTION_MAP={"discovery_raw": "raw", "discovery_graph": "graph"}' >> .env
+echo 'ENV_QUEUE_COLLECTION_MAP={"discovery_raw":"raw","discovery_graph":"graph"}' >> .env
 ```
 
 The above configuration will inform `docker-compose` to:
